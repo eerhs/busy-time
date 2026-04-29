@@ -57,8 +57,6 @@ M2,0,2,2,J3
 ...
 ```
 
----
-
 ### 3. Optional Summary CSV
 
 Used for consistency checks:
