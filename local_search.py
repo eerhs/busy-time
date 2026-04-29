@@ -321,12 +321,18 @@ def write_summary_csv(path: Path, capacity: int, bounded_busy_time: int, num_mac
 def print_schedule(schedule: List[Machine]) -> None:
     print("\nFinal Schedule")
     print("==============")
-    print(f"Total busy time : {total_busy_time(schedule)}")
-    print(f"Number of machines: {len(schedule)}")
+
+    total_busy = 0
     for i, machine in enumerate(schedule, start=1):
-        print(f"\n  Machine {i}  (busy time: {machine.busy_time()})")
+        pieces = preemptive_edf_per_machine(machine)
+        machine_busy = sum(end - start for start, end, _ in pieces)
+        total_busy += machine_busy
+        print(f"\n  Machine {i}  (busy time: {machine_busy})")
         for job in sorted(machine.jobs, key=lambda j: (j.release, j.deadline, j.job_id)):
             print(f"    Job {job.job_id}: [{job.release}, {job.deadline})  p={job.processing_time}")
+
+    print(f"\nTotal busy time : {total_busy}")
+    print(f"Number of machines: {len(schedule)}")
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -348,7 +354,7 @@ def main() -> int:
         description="Local search for the busy-time scheduling problem."
     )
     parser.add_argument("input_csv", help="Input CSV (e.g. inputs/input1.csv)")
-    parser.add_argument("--b", type=int, default=2,
+    parser.add_argument("--b", type=int, default=3,
                         help="Neighborhood size: repack up to b machines at once (default 2)")
     parser.add_argument("--max-iterations", type=int, default=100,
                         help="Maximum local-search iterations (default 100)")
