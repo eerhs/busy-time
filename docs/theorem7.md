@@ -42,9 +42,12 @@ Fields:
 
 - `Capacity`: maximum number of simultaneous jobs per machine, called `g`.
 - `Job`: job identifier.
-- `Release`: earliest time at which the job may start.
-- `Deadline`: latest time by which the job must finish.
-- `processingTime`: required processing length.
+- `Release`: integer earliest time at which the job may start.
+- `Deadline`: integer latest time by which the job must finish.
+- `processingTime`: integer required processing length.
+
+All numeric input fields must be integers. Decimal values such as `3.0` or
+`3.5` are rejected.
 
 The parser validates that every job has a non-empty name, positive processing
 time, a deadline greater than its release time, and enough room in its window:
@@ -85,7 +88,7 @@ LEGACY_INPUT_DIR = BASE_DIR / "input"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 ```
 
-- `EPS` is used for floating-point comparisons.
+- `EPS` is kept as a small numerical tolerance in interval comparisons.
 - `BASE_DIR` points to the repository root.
 - `INPUTS_DIR` is the default input folder.
 - `LEGACY_INPUT_DIR` supports an older `input/` folder name.
@@ -99,9 +102,9 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 @dataclass(frozen=True)
 class Job:
     id: str
-    r: float
-    d: float
-    p: float
+    r: int
+    d: int
+    p: int
 ```
 
 `ScheduledPiece` stores one preemptive piece of a job:
@@ -110,8 +113,8 @@ class Job:
 @dataclass
 class ScheduledPiece:
     job_id: str
-    start: float
-    end: float
+    start: int
+    end: int
 ```
 
 `MachinePiece` stores one interval assigned to one bounded-capacity machine:
@@ -120,8 +123,8 @@ class ScheduledPiece:
 @dataclass
 class MachinePiece:
     machine_id: str
-    start: float
-    end: float
+    start: int
+    end: int
     jobs: List[str]
 ```
 
@@ -205,7 +208,7 @@ Bounded / Unbounded ratio,6.541666666666667
 
 ## Notes
 
-- Time values are handled as floats.
+- Time values are handled as integers.
 - Intervals are represented as half-open intervals: `[start, end)`.
 - Jobs may be preempted.
 - Output files are overwritten when the same input filename is run again.

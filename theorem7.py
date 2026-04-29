@@ -21,23 +21,23 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 @dataclass(frozen=True)
 class Job:
     id: str
-    r: float
-    d: float
-    p: float
+    r: int
+    d: int
+    p: int
 
 
 @dataclass
 class ScheduledPiece:
     job_id: str
-    start: float
-    end: float
+    start: int
+    end: int
 
 
 @dataclass
 class MachinePiece:
     machine_id: str
-    start: float
-    end: float
+    start: int
+    end: int
     jobs: List[str]
 
 
@@ -65,6 +65,22 @@ def resolve_input_csv_path(filename: str) -> Path:
     return INPUTS_DIR / input_path
 
 
+def parse_int_field(value: str, field_name: str, job_id: str | None = None) -> int:
+    stripped_value = value.strip()
+
+    try:
+        parsed_value = int(stripped_value)
+    except ValueError as exc:
+        owner = f" for job {job_id}" if job_id else ""
+        raise ValueError(f"{field_name}{owner} must be an integer.") from exc
+
+    if str(parsed_value) != stripped_value:
+        owner = f" for job {job_id}" if job_id else ""
+        raise ValueError(f"{field_name}{owner} must be an integer.")
+
+    return parsed_value
+
+
 def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
     """
     Reads this CSV format:
@@ -87,7 +103,7 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
     if rows[1][0].strip() != "Capacity":
         raise ValueError("Second row must be: Capacity")
 
-    g = int(rows[2][0])
+    g = parse_int_field(rows[2][0], "Capacity")
 
     if g <= 0:
         raise ValueError("Capacity must be a positive integer.")
@@ -105,9 +121,9 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
             continue
 
         job_id = row[0].strip()
-        r = float(row[1])
-        d = float(row[2])
-        p = float(row[3])
+        r = parse_int_field(row[1], "Release", job_id)
+        d = parse_int_field(row[2], "Deadline", job_id)
+        p = parse_int_field(row[3], "processingTime", job_id)
 
         if not job_id:
             raise ValueError("Every job must have a non-empty Job name.")
@@ -130,7 +146,7 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
 # Interval helpers
 # ============================================================
 
-def merge_intervals(intervals: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+def merge_intervals(intervals: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     if not intervals:
         return []
 
@@ -148,8 +164,8 @@ def merge_intervals(intervals: List[Tuple[float, float]]) -> List[Tuple[float, f
     return merged
 
 
-def intersection_length(intervals: List[Tuple[float, float]], r: float, d: float) -> float:
-    total = 0.0
+def intersection_length(intervals: List[Tuple[int, int]], r: int, d: int) -> int:
+    total = 0
 
     for start, end in intervals:
         left = max(start, r)
@@ -162,10 +178,10 @@ def intersection_length(intervals: List[Tuple[float, float]], r: float, d: float
 
 
 def clip_intervals(
-    intervals: List[Tuple[float, float]],
-    r: float,
-    d: float
-) -> List[Tuple[float, float]]:
+    intervals: List[Tuple[int, int]],
+    r: int,
+    d: int
+) -> List[Tuple[int, int]]:
     clipped = []
 
     for start, end in intervals:
@@ -179,11 +195,11 @@ def clip_intervals(
 
 
 def add_latest_inactive_time(
-    active: List[Tuple[float, float]],
-    r: float,
-    d: float,
-    need: float
-) -> List[Tuple[float, float]]:
+    active: List[Tuple[int, int]],
+    r: int,
+    d: int,
+    need: int
+) -> List[Tuple[int, int]]:
 
     if need <= EPS:
         return active
@@ -227,8 +243,8 @@ def add_latest_inactive_time(
 # Step 1: Unbounded-capacity schedule
 # ============================================================
 
-def compute_unbounded_active_intervals(jobs: List[Job]) -> List[Tuple[float, float]]:
-    active: List[Tuple[float, float]] = []
+def compute_unbounded_active_intervals(jobs: List[Job]) -> List[Tuple[int, int]]:
+    active: List[Tuple[int, int]] = []
 
     for job in sorted(jobs, key=lambda j: j.d):
         already_available = intersection_length(active, job.r, job.d)
@@ -242,7 +258,7 @@ def compute_unbounded_active_intervals(jobs: List[Job]) -> List[Tuple[float, flo
 
 def assign_jobs_to_unbounded_schedule(
     jobs: List[Job],
-    active_intervals: List[Tuple[float, float]]
+    active_intervals: List[Tuple[int, int]]
 ) -> Dict[str, List[ScheduledPiece]]:
 
     schedule: Dict[str, List[ScheduledPiece]] = {}
@@ -278,7 +294,7 @@ def assign_jobs_to_unbounded_schedule(
 
 def build_interesting_intervals(
     unbounded_schedule: Dict[str, List[ScheduledPiece]]
-) -> List[Tuple[float, float]]:
+) -> List[Tuple[int, int]]:
 
     points = set()
 
@@ -300,8 +316,8 @@ def build_interesting_intervals(
 
 def jobs_running_on_interval(
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
-    start: float,
-    end: float
+    start: int,
+    end: int
 ) -> List[str]:
 
     running_jobs = []
@@ -319,7 +335,7 @@ def theorem_7_bounded_preemptive_schedule(
     jobs: List[Job],
     g: int
 ) -> Tuple[
-    List[Tuple[float, float]],
+    List[Tuple[int, int]],
     Dict[str, List[ScheduledPiece]],
     List[MachinePiece]
 ]:
@@ -365,11 +381,11 @@ def theorem_7_bounded_preemptive_schedule(
 # Busy-time calculations
 # ============================================================
 
-def total_unbounded_busy_time(active_intervals: List[Tuple[float, float]]) -> float:
+def total_unbounded_busy_time(active_intervals: List[Tuple[int, int]]) -> int:
     return sum(end - start for start, end in active_intervals)
 
 
-def total_bounded_busy_time(bounded_schedule: List[MachinePiece]) -> float:
+def total_bounded_busy_time(bounded_schedule: List[MachinePiece]) -> int:
     return sum(piece.end - piece.start for piece in bounded_schedule)
 
 
@@ -388,7 +404,7 @@ def save_input_jobs_csv(output_file: str, jobs: List[Job]) -> None:
 
 def save_unbounded_active_intervals_csv(
     output_file: str,
-    active_intervals: List[Tuple[float, float]]
+    active_intervals: List[Tuple[int, int]]
 ) -> None:
 
     with open(output_file, mode="w", newline="") as file:
@@ -440,7 +456,7 @@ def save_bounded_schedule_csv(
 def save_summary_csv(
     output_file: str,
     g: int,
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     bounded_schedule: List[MachinePiece]
 ) -> None:
 
@@ -462,7 +478,7 @@ def save_summary_csv(
 
 def save_all_results_to_separate_csv_files(
     jobs: List[Job],
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
     bounded_schedule: List[MachinePiece],
     g: int,
@@ -497,7 +513,7 @@ def save_all_results_to_separate_csv_files(
 def print_results(
     jobs: List[Job],
     g: int,
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
     bounded_schedule: List[MachinePiece]
 ) -> None:

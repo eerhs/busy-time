@@ -46,6 +46,9 @@ B,3,9,3
 
 Input files are stored in `inputs/` by default.
 
+`Capacity`, `Release`, `Deadline`, and `processingTime` must all be integers.
+Decimal values such as `3.0` or `3.5` are rejected.
+
 ## Run
 
 ```bash

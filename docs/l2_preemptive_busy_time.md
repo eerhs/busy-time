@@ -59,9 +59,12 @@ Fields:
 
 - `Capacity`: machine capacity `g`.
 - `Job`: job identifier.
-- `Release`: release time `r_j`.
-- `Deadline`: deadline `d_j`.
-- `processingTime`: required processing length `p_j`.
+- `Release`: integer release time `r_j`.
+- `Deadline`: integer deadline `d_j`.
+- `processingTime`: integer required processing length `p_j`.
+
+All numeric input fields must be integers. Decimal values such as `3.0` or
+`3.5` are rejected.
 
 The script validates that each job is individually feasible:
 

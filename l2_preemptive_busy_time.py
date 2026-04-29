@@ -17,32 +17,32 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 @dataclass(frozen=True)
 class Job:
     id: str
-    r: float
-    d: float
-    p: float
+    r: int
+    d: int
+    p: int
 
 
 @dataclass
 class ScheduledPiece:
     job_id: str
-    start: float
-    end: float
+    start: int
+    end: int
 
 
 @dataclass
 class ActiveIteration:
     iteration: int
-    deadline: float
+    deadline: int
     added_intervals: str
-    added_length: float
+    added_length: int
     considered_jobs: List[str]
 
 
 @dataclass
 class MachinePiece:
     machine_id: str
-    start: float
-    end: float
+    start: int
+    end: int
     jobs: List[str]
 
 
@@ -66,6 +66,22 @@ def resolve_input_csv_path(filename: str) -> Path:
     return INPUTS_DIR / input_path
 
 
+def parse_int_field(value: str, field_name: str, job_id: str | None = None) -> int:
+    stripped_value = value.strip()
+
+    try:
+        parsed_value = int(stripped_value)
+    except ValueError as exc:
+        owner = f" for job {job_id}" if job_id else ""
+        raise ValueError(f"{field_name}{owner} must be an integer.") from exc
+
+    if str(parsed_value) != stripped_value:
+        owner = f" for job {job_id}" if job_id else ""
+        raise ValueError(f"{field_name}{owner} must be an integer.")
+
+    return parsed_value
+
+
 def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
     with open(filename, mode="r", newline="") as file:
         reader = csv.reader(file, skipinitialspace=True)
@@ -77,7 +93,7 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
     if rows[1][0].strip() != "Capacity":
         raise ValueError("Second row must be: Capacity")
 
-    g = int(rows[2][0])
+    g = parse_int_field(rows[2][0], "Capacity")
     if g <= 0:
         raise ValueError("Capacity must be a positive integer.")
 
@@ -92,9 +108,9 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
             continue
 
         job_id = row[0].strip()
-        r = float(row[1])
-        d = float(row[2])
-        p = float(row[3])
+        r = parse_int_field(row[1], "Release", job_id)
+        d = parse_int_field(row[2], "Deadline", job_id)
+        p = parse_int_field(row[3], "processingTime", job_id)
 
         if not job_id:
             raise ValueError("Every job must have a non-empty Job name.")
@@ -110,7 +126,7 @@ def read_input_from_csv(filename: str | Path) -> Tuple[int, List[Job]]:
     return g, jobs
 
 
-def merge_intervals(intervals: Iterable[Tuple[float, float]]) -> List[Tuple[float, float]]:
+def merge_intervals(intervals: Iterable[Tuple[int, int]]) -> List[Tuple[int, int]]:
     sorted_intervals = sorted(intervals)
     if not sorted_intervals:
         return []
@@ -126,16 +142,16 @@ def merge_intervals(intervals: Iterable[Tuple[float, float]]) -> List[Tuple[floa
     return merged
 
 
-def interval_length(intervals: Iterable[Tuple[float, float]]) -> float:
+def interval_length(intervals: Iterable[Tuple[int, int]]) -> int:
     return sum(end - start for start, end in intervals)
 
 
 def intersection_length(
-    intervals: List[Tuple[float, float]],
-    r: float,
-    d: float,
-) -> float:
-    total = 0.0
+    intervals: List[Tuple[int, int]],
+    r: int,
+    d: int,
+) -> int:
+    total = 0
 
     for start, end in intervals:
         left = max(start, r)
@@ -147,10 +163,10 @@ def intersection_length(
 
 
 def clip_intervals(
-    intervals: List[Tuple[float, float]],
-    r: float,
-    d: float,
-) -> List[Tuple[float, float]]:
+    intervals: List[Tuple[int, int]],
+    r: int,
+    d: int,
+) -> List[Tuple[int, int]]:
     clipped = []
 
     for start, end in intervals:
@@ -163,11 +179,11 @@ def clip_intervals(
 
 
 def add_latest_inactive_time(
-    active: List[Tuple[float, float]],
-    r: float,
-    d: float,
-    need: float,
-) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]:
+    active: List[Tuple[int, int]],
+    r: int,
+    d: int,
+    need: int,
+) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
     if need <= EPS:
         return active, []
 
@@ -205,7 +221,7 @@ def add_latest_inactive_time(
 
 def compute_unbounded_preemptive_schedule(
     jobs: List[Job],
-) -> Tuple[List[Tuple[float, float]], Dict[str, List[ScheduledPiece]], List[ActiveIteration]]:
+) -> Tuple[List[Tuple[int, int]], Dict[str, List[ScheduledPiece]], List[ActiveIteration]]:
     """
     Implements the greedy idea from Theorem 6 of the paper.
 
@@ -218,13 +234,13 @@ def compute_unbounded_preemptive_schedule(
     coordinates after each iteration.
     """
 
-    active_intervals: List[Tuple[float, float]] = []
+    active_intervals: List[Tuple[int, int]] = []
     iterations: List[ActiveIteration] = []
 
     for iteration, job in enumerate(sorted(jobs, key=lambda item: (item.d, item.r, item.id)), start=1):
         already_available = intersection_length(active_intervals, job.r, job.d)
         deficit = job.p - already_available
-        added_intervals: List[Tuple[float, float]] = []
+        added_intervals: List[Tuple[int, int]] = []
 
         if deficit > EPS:
             active_intervals, added_intervals = add_latest_inactive_time(
@@ -258,7 +274,7 @@ def compute_unbounded_preemptive_schedule(
 
 def assign_jobs_to_unbounded_schedule(
     jobs: List[Job],
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
 ) -> Dict[str, List[ScheduledPiece]]:
     schedule: Dict[str, List[ScheduledPiece]] = {}
 
@@ -285,7 +301,7 @@ def assign_jobs_to_unbounded_schedule(
 
 def build_interesting_intervals(
     unbounded_schedule: Dict[str, List[ScheduledPiece]]
-) -> List[Tuple[float, float]]:
+) -> List[Tuple[int, int]]:
     points = set()
 
     for pieces in unbounded_schedule.values():
@@ -303,8 +319,8 @@ def build_interesting_intervals(
 
 def jobs_running_on_interval(
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
-    start: float,
-    end: float,
+    start: int,
+    end: int,
 ) -> List[str]:
     running_jobs = []
 
@@ -357,7 +373,7 @@ def l2_preemptive_busy_time_schedule(
     jobs: List[Job],
     g: int,
 ) -> Tuple[
-    List[Tuple[float, float]],
+    List[Tuple[int, int]],
     Dict[str, List[ScheduledPiece]],
     List[ActiveIteration],
     List[MachinePiece],
@@ -369,11 +385,11 @@ def l2_preemptive_busy_time_schedule(
     return active_intervals, unbounded_schedule, iterations, bounded_schedule
 
 
-def total_unbounded_busy_time(active_intervals: List[Tuple[float, float]]) -> float:
+def total_unbounded_busy_time(active_intervals: List[Tuple[int, int]]) -> int:
     return interval_length(active_intervals)
 
 
-def total_bounded_busy_time(bounded_schedule: List[MachinePiece]) -> float:
+def total_bounded_busy_time(bounded_schedule: List[MachinePiece]) -> int:
     return sum(piece.end - piece.start for piece in bounded_schedule)
 
 
@@ -450,7 +466,7 @@ def save_active_iterations_csv(
 
 def save_active_intervals_csv(
     output_file: str | Path,
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
 ) -> None:
     with open(output_file, mode="w", newline="") as file:
         writer = csv.writer(file)
@@ -493,7 +509,7 @@ def save_bounded_schedule_csv(
 def save_summary_csv(
     output_file: str | Path,
     g: int,
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     bounded_schedule: List[MachinePiece],
 ) -> None:
     unbounded_busy_time = total_unbounded_busy_time(active_intervals)
@@ -513,7 +529,7 @@ def save_summary_csv(
 
 def save_all_results(
     jobs: List[Job],
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
     iterations: List[ActiveIteration],
     bounded_schedule: List[MachinePiece],
@@ -547,7 +563,7 @@ def save_all_results(
 def print_results(
     jobs: List[Job],
     g: int,
-    active_intervals: List[Tuple[float, float]],
+    active_intervals: List[Tuple[int, int]],
     unbounded_schedule: Dict[str, List[ScheduledPiece]],
     iterations: List[ActiveIteration],
     bounded_schedule: List[MachinePiece],
