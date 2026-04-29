@@ -1,0 +1,3 @@
+Machine,Start,End,Length,Jobs on Machine
+M001,0,6,6,"A, B"
+M002,0,6,6,C
