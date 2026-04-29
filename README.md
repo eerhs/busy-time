@@ -1,7 +1,6 @@
 # Busy-Time Scheduling
 
-This repository contains Python implementations of busy-time scheduling
-algorithms.
+This repository contains Python implementations of busy-time scheduling algorithms.
 
 ## Project Structure
 
@@ -9,27 +8,29 @@ algorithms.
 busy-time/
 +-- theorem7.py
 +-- l2_preemptive_busy_time.py
++-- check_feasibility
 +-- README.md
 +-- docs/
 |   +-- theorem7.md
 |   +-- l2_preemptive_busy_time.md
 +-- inputs/
+|   +-- input1.csv
 |   +-- jobs_c2.csv
 +-- outputs/
 ```
 
 ## Implementations
 
-- `theorem7.py`: original bounded preemptive scheduling implementation.
+- `theorem7.py`: Original bounded preemptive scheduling implementation.  
   Documentation: [`docs/theorem7.md`](docs/theorem7.md).
-- `l2_preemptive_busy_time.py`: L2 implementation of the paper's Section 4.4
-  preemptive busy-time algorithm. Documentation:
-  [`docs/l2_preemptive_busy_time.md`](docs/l2_preemptive_busy_time.md).
+- `l2_preemptive_busy_time.py`: L2 implementation of the paper's Section 4.4 preemptive busy-time algorithm.  
+  Documentation: [`docs/l2_preemptive_busy_time.md`](docs/l2_preemptive_busy_time.md).
+- `check_feasibility.py`: Verifies whether a bounded preemptive busy-time schedule is valid with respect to a given input instance of jobs.
+  Documentation: [`docs/check_feasibility.md`](docs/check_feasibility.md).
 
 ## Requirements
 
-The scripts use only the Python standard library. Python 3.10 or newer is
-recommended because the code uses `str | Path` type annotations.
+The scripts use only the Python standard library. Python 3.10 or newer is recommended because the code uses `str | Path` type annotations.
 
 ## Input Format
 
@@ -46,8 +47,7 @@ B,3,9,3
 
 Input files are stored in `inputs/` by default.
 
-`Capacity`, `Release`, `Deadline`, and `processingTime` must all be integers.
-Decimal values such as `3.0` or `3.5` are rejected.
+`Capacity`, `Release`, `Deadline`, and `processingTime` must all be integers. Decimal values such as `3.0` or `3.5` are rejected.
 
 ## Run
 
