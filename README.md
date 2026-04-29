@@ -21,12 +21,19 @@ busy-time/
 
 ## Implementations
 
-- `theorem7.py`: Original bounded preemptive scheduling implementation.  
-  Documentation: [`docs/theorem7.md`](docs/theorem7.md).
+Working:
+
 - `l2_preemptive_busy_time.py`: L2 implementation of the paper's Section 4.4 preemptive busy-time algorithm.  
   Documentation: [`docs/l2_preemptive_busy_time.md`](docs/l2_preemptive_busy_time.md).
 - `check_feasibility.py`: Verifies whether a bounded preemptive busy-time schedule is valid with respect to a given input instance of jobs.
   Documentation: [`docs/check_feasibility.md`](docs/check_feasibility.md).
+- `local_search.py`:
+
+Archive:
+
+- `theorem7.py`: Original bounded preemptive scheduling implementation.  
+  Documentation: [`docs/theorem7.md`](docs/theorem7.md).
+
 
 ## Requirements
 
